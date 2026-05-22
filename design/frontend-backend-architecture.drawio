@@ -1,0 +1,127 @@
+<mxfile host="app.diagrams.net" modified="2026-05-22T00:00:00.000Z" agent="Codex" version="26.0.0" type="device">
+  <diagram id="signaldesk-aws-architecture" name="SignalDesk AWS Architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="SignalDesk AWS Frontend, API, Pipeline, and Data Architecture" style="text;html=1;strokeColor=none;fillColor=none;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="1000" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeBoundary" value="Edge and frontend" style="swimlane;html=1;startSize=30;fillColor=#eaf4ff;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="430" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="apiBoundary" value="Private admin API" style="swimlane;html=1;startSize=30;fillColor=#e9f7ef;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="100" width="410" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="pipelineBoundary" value="Pipeline and AI runtime" style="swimlane;html=1;startSize=30;fillColor=#fff4e6;strokeColor=#d79b00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="100" width="500" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="dataBoundary" value="Shared state and configuration" style="swimlane;html=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="680" width="1220" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" value="Admin user&#xa;browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="160" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="cloudfront" value="CloudFront distribution&#xa;HTTPS&#xa;/api/* origin routing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="150" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="S3 private bucket&#xa;dashboard/index.html&#xa;static assets" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="300" y="290" width="150" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="dashboard" value="Dashboard UI&#xa;vanilla JavaScript&#xa;Chart.js&#xa;same-origin fetch()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="130" y="430" width="320" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="apigw" value="API Gateway REST API&#xa;prod stage&#xa;metrics and INFO logging" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="150" width="290" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="cognito" value="Cognito authorizer&#xa;private admin user pool&#xa;dashboard app client" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="600" y="280" width="290" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="apiHandlers" value="API Lambda handlers&#xa;status, dashboard, watchlist&#xa;ticker detail/history&#xa;earnings story, news draft&#xa;manual run, run status" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="410" width="290" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="eventbridge" value="EventBridge schedule&#xa;20:00 UTC&#xa;disabled by default" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="150" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="pipeline" value="Pipeline Lambda container&#xa;Python 3.12&#xa;15 minute timeout&#xa;market analysis orchestrator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="150" width="180" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="modules" value="Pipeline modules&#xa;yfinance + FRED + NewsAPI&#xa;technical indicators&#xa;sentiment scoring&#xa;narrative and draft generation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="310" width="410" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="bedrock" value="Amazon Bedrock&#xa;finance-only prompts&#xa;JSON output validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="470" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="externalData" value="External data providers&#xa;yfinance&#xa;FRED API&#xa;NewsAPI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="470" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ddb" value="DynamoDB single table&#xa;latest runs&#xa;daily history&#xa;watchlist&#xa;pipeline status" style="shape=cylinder3d;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="740" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ssm" value="SSM Parameter Store&#xa;model settings&#xa;pipeline weights&#xa;allowed topics&#xa;safety denylist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="540" y="740" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="secrets" value="Secrets Manager&#xa;FRED key&#xa;NewsAPI key&#xa;Discord webhook&#xa;optional OpenAI key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="840" y="740" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" value="Operations&#xa;CloudWatch logs&#xa;API Gateway metrics&#xa;SQS pipeline DLQ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="740" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="eAdminCf" value="opens" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="admin" target="cloudfront">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eCfS3" value="serves static UI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="cloudfront" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eS3Dashboard" value="loads" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="s3" target="dashboard">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eDashboardCf" value="/api/* JSON calls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="dashboard" target="cloudfront">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eCfApi" value="/api/*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="cloudfront" target="apigw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eApiCog" value="authorizes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="apigw" target="cognito">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eCogHandlers" value="routes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="cognito" target="apiHandlers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eManualRun" value="manual invoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="apiHandlers" target="pipeline">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eSchedule" value="scheduled invoke" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="eventbridge" target="pipeline">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ePipelineModules" value="runs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="pipeline" target="modules">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eModulesBedrock" value="AI generation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="modules" target="bedrock">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eModulesExternal" value="fetch market data" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="modules" target="externalData">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eHandlersDdb" value="read/write dashboard state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="apiHandlers" target="ddb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ePipelineDdb" value="save runs and status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="pipeline" target="ddb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eSsmRuntime" value="settings and policy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="ssm" target="modules">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eSecretsRuntime" value="API keys and webhooks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="secrets" target="modules">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eOpsPipeline" value="logs and DLQ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="pipeline" target="ops">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eOpsApi" value="logs and metrics" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;strokeWidth=2;" edge="1" parent="1" source="apiHandlers" target="ops">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="720" viewBox="0 0 2400 720">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#555"/>
+    </marker>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #333; }
+      .title { font-size: 34px; font-weight: 700; }
+      .label { font-size: 24px; }
+      .small { font-size: 20px; }
+      .arrow { stroke: #555; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="2400" height="720" fill="#fff"/>
+  <text x="1200" y="64" text-anchor="middle" class="title">SignalDesk AWS Logical Flow</text>
+
+  <g transform="translate(70 280)">
+    <rect width="260" height="110" rx="8" fill="#ebe8ff" stroke="#8f7add" stroke-width="3"/>
+    <text x="130" y="47" text-anchor="middle" class="label">Admin selects</text>
+    <text x="130" y="78" text-anchor="middle" class="label">watchlist</text>
+  </g>
+
+  <g transform="translate(410 260)">
+    <rect width="290" height="150" rx="8" fill="#e8f1ff" stroke="#3366cc" stroke-width="3"/>
+    <text x="145" y="50" text-anchor="middle" class="label">CloudFront + S3</text>
+    <text x="145" y="82" text-anchor="middle" class="label">Dashboard</text>
+    <text x="145" y="114" text-anchor="middle" class="label">Cognito protected</text>
+  </g>
+
+  <g transform="translate(780 260)">
+    <rect width="280" height="150" rx="8" fill="#e2f5e9" stroke="#2e7d32" stroke-width="3"/>
+    <text x="140" y="50" text-anchor="middle" class="label">API Gateway</text>
+    <text x="140" y="82" text-anchor="middle" class="label">Lambda handlers</text>
+    <text x="140" y="114" text-anchor="middle" class="label">/api/*</text>
+  </g>
+
+  <g transform="translate(1140 260)">
+    <rect width="300" height="150" rx="8" fill="#fff2cc" stroke="#d6a100" stroke-width="3"/>
+    <text x="150" y="50" text-anchor="middle" class="label">EventBridge or</text>
+    <text x="150" y="82" text-anchor="middle" class="label">manual run</text>
+    <text x="150" y="114" text-anchor="middle" class="label">Pipeline Lambda</text>
+  </g>
+
+  <g transform="translate(1520 260)">
+    <rect width="300" height="150" rx="8" fill="#ebe8ff" stroke="#8f7add" stroke-width="3"/>
+    <text x="150" y="45" text-anchor="middle" class="label">Market, macro,</text>
+    <text x="150" y="77" text-anchor="middle" class="label">news, technical +</text>
+    <text x="150" y="109" text-anchor="middle" class="label">sentiment signals</text>
+  </g>
+
+  <g transform="translate(1900 260)">
+    <rect width="300" height="150" rx="8" fill="#fff2cc" stroke="#d6a100" stroke-width="3"/>
+    <text x="150" y="45" text-anchor="middle" class="label">Bedrock generates</text>
+    <text x="150" y="77" text-anchor="middle" class="label">finance-only JSON</text>
+    <text x="150" y="109" text-anchor="middle" class="label">validated output</text>
+  </g>
+
+  <g transform="translate(2050 80)">
+    <rect width="260" height="110" rx="8" fill="#e2f5e9" stroke="#2e7d32" stroke-width="3"/>
+    <text x="130" y="35" text-anchor="middle" class="small">Dashboard review</text>
+    <text x="130" y="62" text-anchor="middle" class="small">and first-pass</text>
+    <text x="130" y="89" text-anchor="middle" class="small">editorial content</text>
+  </g>
+
+  <path class="arrow" d="M330 335 H410"/>
+  <path class="arrow" d="M700 335 H780"/>
+  <path class="arrow" d="M1060 335 H1140"/>
+  <path class="arrow" d="M1440 335 H1520"/>
+  <path class="arrow" d="M1820 335 H1900"/>
+  <path class="arrow" d="M2050 260 C2100 220 2140 205 2180 190"/>
+
+  <g transform="translate(600 540)">
+    <rect width="260" height="95" rx="8" fill="#f3f3f3" stroke="#666" stroke-width="3"/>
+    <text x="130" y="36" text-anchor="middle" class="small">DynamoDB</text>
+    <text x="130" y="63" text-anchor="middle" class="small">latest, history, status</text>
+  </g>
+
+  <g transform="translate(930 540)">
+    <rect width="260" height="95" rx="8" fill="#f3f3f3" stroke="#666" stroke-width="3"/>
+    <text x="130" y="36" text-anchor="middle" class="small">SSM Parameters</text>
+    <text x="130" y="63" text-anchor="middle" class="small">settings + safety policy</text>
+  </g>
+
+  <g transform="translate(1260 540)">
+    <rect width="260" height="95" rx="8" fill="#f3f3f3" stroke="#666" stroke-width="3"/>
+    <text x="130" y="36" text-anchor="middle" class="small">Secrets Manager</text>
+    <text x="130" y="63" text-anchor="middle" class="small">provider keys + webhooks</text>
+  </g>
+
+  <g transform="translate(1590 540)">
+    <rect width="260" height="95" rx="8" fill="#f3f3f3" stroke="#666" stroke-width="3"/>
+    <text x="130" y="36" text-anchor="middle" class="small">CloudWatch + DLQ</text>
+    <text x="130" y="63" text-anchor="middle" class="small">logs, metrics, failures</text>
+  </g>
+
+  <path class="arrow" d="M920 410 C860 470 790 500 730 540"/>
+  <path class="arrow" d="M1290 410 C1150 470 900 495 730 540"/>
+  <path class="arrow" d="M1290 410 C1200 470 1120 500 1060 540"/>
+  <path class="arrow" d="M1290 410 C1325 470 1360 505 1390 540"/>
+  <path class="arrow" d="M1290 410 C1450 470 1620 500 1720 540"/>
+  <path class="arrow" d="M2050 410 C1750 485 1080 505 730 540"/>
+</svg>

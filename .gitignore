@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+
+# Local runtime state
+.env
+.env.*
+!.env.example
+logs/
+data/db/
+data/cache/
+*.sqlite
+*.db
+
+# AWS/CDK
+cdk.out/
+*.assets.json
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
