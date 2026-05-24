@@ -168,3 +168,4 @@ make test
 The test suite covers local API compatibility, Lambda handlers, DynamoDB data
 model behavior, safety validation, notifications, storage, technical indicators,
 and SIT coverage.
+# signaldesk-aws
