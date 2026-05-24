@@ -31,6 +31,7 @@ class LocalConfigProvider(ConfigProvider):
         return RuntimeSecrets(
             fred_api_key=os.getenv("FRED_API_KEY", ""),
             newsapi_key=os.getenv("NEWSAPI_KEY", ""),
+            x_bearer_token=os.getenv("X_BEARER_TOKEN", ""),
             discord_webhook_url=os.getenv("DISCORD_WEBHOOK_URL", ""),
             openai_api_key=os.getenv("OPENAI_API_KEY", ""),
         )

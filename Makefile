@@ -14,7 +14,7 @@ test:
 	$(PY) -m pytest tests
 
 synth:
-	cd infrastructure && ../$(PY) -m aws_cdk synth
+	cd infrastructure && cdk synth
 
 deploy:
 	bash scripts/deploy.sh

@@ -13,6 +13,7 @@ import requests
 from datetime import datetime, timezone, timedelta
 
 from pipeline.config import API_KEYS, SETTINGS
+from pipeline.runtime import get_config_provider
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ def fetch_social(ticker: str) -> list[dict]:
     Returns list of post dicts with title (text), score (likes), etc.
     Returns empty list gracefully if token not set or API fails.
     """
-    token = API_KEYS.get("x_bearer_token", "")
+    token = _get_x_bearer_token()
     if not token or token.startswith("YOUR_"):
         log.info(f"  X API token not configured — skipping social fetch for {ticker}")
         return []
@@ -63,6 +64,15 @@ def fetch_social(ticker: str) -> list[dict]:
     except Exception as e:
         log.warning(f"  X API fetch failed for {ticker}: {e}")
         return []
+
+
+def _get_x_bearer_token() -> str:
+    """Read X bearer token from runtime config, with legacy local fallback."""
+    try:
+        token = get_config_provider().secrets().x_bearer_token
+    except Exception:
+        token = ""
+    return token or API_KEYS.get("x_bearer_token", "")
 
 
 def _build_query(ticker: str) -> str:

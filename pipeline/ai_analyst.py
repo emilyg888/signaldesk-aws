@@ -52,8 +52,9 @@ def generate_analysis(
         from pipeline.runtime import runtime_mode, get_ai_client
         if runtime_mode() == "aws":
             return get_ai_client().generate_analysis(ticker=ticker, price_data=price_data, technicals=technicals, sentiment=sentiment, macro=macro)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning(f"  AWS analysis provider failed for {ticker}: {e}")
+        return _fallback_analysis(ticker, technicals, sentiment)
     prompt = _build_prompt(ticker, price_data, technicals, sentiment, macro)
 
     log.debug(f"  Calling OpenAI analysis model for {ticker}")
@@ -388,19 +389,19 @@ def _normalize_analysis(payload: dict, ticker: str, tech: dict, sent: dict) -> d
 
 
 def _fallback_analysis(ticker, tech, sent) -> dict:
-    """Minimal fallback if OpenAI call fails."""
+    """Minimal fallback if AI analysis generation fails."""
     score = (tech.get("composite_score", 50) + sent.get("composite_score", 50)) / 2
     bias  = "Bullish" if score >= 60 else "Bearish" if score <= 40 else "Neutral"
     return {
         "bias":       bias,
         "conviction": "Low",
-        "narrative":  f"Fallback analysis — AI call failed. Tech: {tech.get('composite_score')}/100, Sentiment: {sent.get('composite_score')}/100.",
-        "key_risks":        ["OpenAI unavailable"],
+        "narrative":  f"Fallback analysis - AI generation failed. Tech: {tech.get('composite_score')}/100, Sentiment: {sent.get('composite_score')}/100.",
+        "key_risks":        ["AI generation unavailable"],
         "key_catalysts":    [],
         "forecast": [
             {"day": f"D+{i}", "direction": "Flat", "magnitude": "0%", "confidence": 50}
             for i in range(1, 6)
         ],
         "key_levels":       {"support": [], "resistance": []},
-        "suggested_action": "Check OpenAI configuration and retry.",
+        "suggested_action": "Check AI provider configuration and retry.",
     }

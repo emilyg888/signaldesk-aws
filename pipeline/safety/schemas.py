@@ -11,6 +11,15 @@ Direction = Literal["Up", "Down", "Flat"]
 SentimentLabel = Literal["Bullish", "Bearish", "Neutral"]
 
 
+def _direction_from_text(value: str) -> Direction:
+    text = value.lower()
+    if any(token in text for token in ("bear", "down", "lower", "negative", "decline", "weak")):
+        return "Down"
+    if any(token in text for token in ("bull", "up", "higher", "positive", "rise", "strong")):
+        return "Up"
+    return "Flat"
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -36,6 +45,17 @@ class SentimentResponse(StrictModel):
     label: SentimentLabel = "Neutral"
     key_themes: list[str] = Field(default_factory=list, max_length=8)
 
+    @field_validator("key_themes", mode="before")
+    @classmethod
+    def normalize_key_themes(cls, value: Any) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            value = [item.strip() for item in value.split(",")]
+        if not isinstance(value, list):
+            value = [value]
+        return [str(item).strip() for item in value if str(item).strip()][:8]
+
 
 class ForecastDay(StrictModel):
     day: str = Field(pattern=r"^D\+[1-5]$")
@@ -43,10 +63,29 @@ class ForecastDay(StrictModel):
     magnitude: str = Field(max_length=40)
     confidence: int = Field(ge=50, le=85)
 
+    @field_validator("direction", mode="before")
+    @classmethod
+    def normalize_direction(cls, value: Any) -> Direction:
+        text = str(value or "").strip().lower()
+        if text in {"up", "bullish", "positive", "higher"}:
+            return "Up"
+        if text in {"down", "bearish", "negative", "lower"}:
+            return "Down"
+        return "Flat"
+
 
 class KeyLevels(StrictModel):
     support: list[str] = Field(default_factory=list, max_length=4)
     resistance: list[str] = Field(default_factory=list, max_length=4)
+
+    @field_validator("support", "resistance", mode="before")
+    @classmethod
+    def normalize_level_list(cls, value: Any) -> list[str]:
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            value = [value]
+        return [str(item).strip() for item in value if str(item).strip()][:4]
 
 
 class AnalysisRequest(StrictModel):
@@ -66,6 +105,58 @@ class AnalysisResponse(StrictModel):
     forecast: list[ForecastDay] = Field(min_length=1, max_length=5)
     key_levels: KeyLevels = Field(default_factory=KeyLevels)
     suggested_action: str = Field(default="", max_length=500)
+
+    @field_validator("conviction", mode="before")
+    @classmethod
+    def normalize_conviction(cls, value: Any) -> Conviction:
+        text = str(value or "").strip().lower()
+        if text in {"high", "strong"}:
+            return "High"
+        if text in {"medium", "moderate", "mid"}:
+            return "Medium"
+        return "Low"
+
+    @field_validator("forecast", mode="before")
+    @classmethod
+    def normalize_forecast(cls, value: Any) -> list[dict[str, Any]]:
+        if value is None:
+            value = []
+        if isinstance(value, str):
+            value = [value]
+        if not isinstance(value, list):
+            value = [value]
+
+        normalized: list[dict[str, Any]] = []
+        for index, item in enumerate(value[:5], start=1):
+            if isinstance(item, dict):
+                row = dict(item)
+                row.setdefault("day", f"D+{index}")
+                row.setdefault("direction", _direction_from_text(str(row)))
+                row.setdefault("magnitude", "Qualitative")
+                row.setdefault("confidence", 55)
+                normalized.append(row)
+                continue
+
+            text = str(item).strip() or "Qualitative outlook"
+            normalized.append(
+                {
+                    "day": f"D+{index}",
+                    "direction": _direction_from_text(text),
+                    "magnitude": text[:40],
+                    "confidence": 55,
+                }
+            )
+
+        if not normalized:
+            normalized.append(
+                {
+                    "day": "D+1",
+                    "direction": "Flat",
+                    "magnitude": "Qualitative outlook",
+                    "confidence": 55,
+                }
+            )
+        return normalized
 
 
 class SourceLink(StrictModel):

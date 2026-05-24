@@ -19,6 +19,9 @@ data/cache/
 # AWS/CDK
 cdk.out/
 *.assets.json
+infrastructure/Outputs_aws_deployment
+design/Outputs_aws_deployment
+**/Outputs_aws_deployment
 
 # OS/editor
 .DS_Store

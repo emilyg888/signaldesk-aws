@@ -32,6 +32,7 @@ class SafetySettings:
 class RuntimeSecrets:
     fred_api_key: str = ""
     newsapi_key: str = ""
+    x_bearer_token: str = ""
     discord_webhook_url: str = ""
     openai_api_key: str = ""
 

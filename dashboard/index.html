@@ -708,6 +708,56 @@
   }
   .toast.show { transform: translateY(0); opacity: 1; }
 
+  /* ── Auth ── */
+  .auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,12,15,0.94);
+    z-index: 8000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .auth-box {
+    width: min(420px, 100%);
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 22px;
+  }
+  .auth-box h1 {
+    font-family: var(--display);
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+  .auth-box label {
+    display: block;
+    font-size: 10px;
+    color: var(--hint);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 14px 0 6px;
+  }
+  .auth-box input {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    outline: none;
+  }
+  .auth-box input:focus { border-color: var(--green); }
+  .auth-error {
+    min-height: 18px;
+    margin-top: 12px;
+    color: var(--red);
+    font-size: 11px;
+  }
+
   /* ── Watchlist manager ── */
   .watchlist-chip {
     display: inline-flex;
@@ -750,6 +800,7 @@
   <div class="header-meta">
     <span><span class="status-dot" id="statusDot"></span><span id="statusText">connecting...</span></span>
     <button class="run-btn" id="runBtn" onclick="triggerRun()">▶ RUN NOW</button>
+    <button class="run-btn" id="signOutBtn" onclick="signOut()" style="display:none">SIGN OUT</button>
   </div>
 </header>
 
@@ -839,7 +890,7 @@
           <div class="panel-header">
             <div class="panel-title">Sentiment</div>
             <div style="display:flex;gap:6px;align-items:center">
-              <div class="panel-badge">NewsAPI · OpenAI</div>
+              <div class="panel-badge">News · AI</div>
               <div class="panel-badge" id="xPostsBadge" style="display:none;color:var(--blue);border-color:var(--blue)"></div>
             </div>
           </div>
@@ -875,7 +926,7 @@
         <div class="panel-header">
           <div class="panel-title">Corporate Earnings Story</div>
           <div class="copy-actions">
-            <div class="panel-badge">OpenAI ChatGPT</div>
+            <div class="panel-badge">Amazon Bedrock</div>
             <button class="run-btn" id="earningsBtn" onclick="generateEarningsStory()">Generate</button>
           </div>
         </div>
@@ -906,7 +957,7 @@
             <div style="font-size:11px;color:var(--hint);margin-top:5px" id="newsDraftTicker">—</div>
           </div>
           <div class="copy-actions">
-            <div class="panel-badge">OpenAI ChatGPT</div>
+            <div class="panel-badge">Amazon Bedrock</div>
             <button class="run-btn" id="newsDraftBtn" onclick="generateNewsDraft()">Generate</button>
           </div>
         </div>
@@ -938,8 +989,23 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <h1>Signal<span style="color:var(--green)">Desk</span></h1>
+    <label for="authEmail">Email</label>
+    <input id="authEmail" type="email" autocomplete="username">
+    <label for="authPassword">Password</label>
+    <input id="authPassword" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')signIn()">
+    <div class="auth-error" id="authError"></div>
+    <button class="run-btn" onclick="signIn()" style="width:100%;margin-top:10px;border-color:var(--green);color:var(--green)">SIGN IN</button>
+  </div>
+</div>
+
 <script>
 const API = '';  // same origin — FastAPI serves this file
+const COGNITO_REGION = 'ap-southeast-2';
+const COGNITO_CLIENT_ID = '6oncta8rljc9hb4h6brn09pv5j';
+const TOKEN_KEY = 'signaldesk_id_token';
 let state = {
   activeTicker: null,
   watchlist: [],
@@ -953,15 +1019,102 @@ let state = {
   },
 };
 
+function idToken() {
+  return localStorage.getItem(TOKEN_KEY) || '';
+}
+
+function isTokenUsable(token) {
+  try {
+    const payload = JSON.parse(atob(base64UrlDecode(token.split('.')[1])));
+    return payload.exp && payload.exp * 1000 > Date.now() + 30000;
+  } catch {
+    return false;
+  }
+}
+
+function base64UrlDecode(value) {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  return base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=');
+}
+
+function showAuth(message = '') {
+  document.getElementById('authError').textContent = message;
+  document.getElementById('authOverlay').style.display = 'flex';
+  document.getElementById('signOutBtn').style.display = 'none';
+}
+
+function hideAuth() {
+  document.getElementById('authOverlay').style.display = 'none';
+  document.getElementById('signOutBtn').style.display = 'inline-block';
+}
+
+async function signIn() {
+  const username = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const authError = document.getElementById('authError');
+  authError.textContent = '';
+  try {
+    const r = await fetch(`https://cognito-idp.${COGNITO_REGION}.amazonaws.com/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-amz-json-1.1',
+        'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth',
+      },
+      body: JSON.stringify({
+        AuthFlow: 'USER_PASSWORD_AUTH',
+        ClientId: COGNITO_CLIENT_ID,
+        AuthParameters: { USERNAME: username, PASSWORD: password },
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || d.__type || `HTTP ${r.status}`);
+    if (d.ChallengeName) throw new Error(`Cognito challenge ${d.ChallengeName} is required. Set a permanent password in Cognito, then sign in again.`);
+    const token = d.AuthenticationResult && d.AuthenticationResult.IdToken;
+    if (!token) throw new Error('Cognito did not return an ID token.');
+    localStorage.setItem(TOKEN_KEY, token);
+    hideAuth();
+    await boot();
+  } catch (e) {
+    authError.textContent = e.message;
+  }
+}
+
+function signOut() {
+  localStorage.removeItem(TOKEN_KEY);
+  showAuth();
+}
+
+async function apiFetch(path, options = {}) {
+  const token = idToken();
+  if (!isTokenUsable(token)) {
+    showAuth('Sign in to load dashboard data.');
+    throw new Error('Not signed in');
+  }
+  const headers = { ...(options.headers || {}), Authorization: `Bearer ${token}` };
+  if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  const r = await fetch(`${API}${path}`, { ...options, headers });
+  if (r.status === 401 || r.status === 403) {
+    signOut();
+    throw new Error('Session expired or unauthorized.');
+  }
+  return r;
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function boot() {
+  if (!isTokenUsable(idToken())) {
+    showAuth();
+    return;
+  }
+  hideAuth();
   await checkStatus();
   await loadDashboard();
 }
 
 async function checkStatus() {
   try {
-    const r = await fetch(`${API}/api/status`);
+    const r = await apiFetch('/api/status');
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
     const d = await r.json();
     document.getElementById('statusDot').style.background = 'var(--green)';
     document.getElementById('statusText').textContent = `${d.tickers} tickers loaded`;
@@ -979,12 +1132,14 @@ async function checkStatus() {
 async function loadDashboard() {
   try {
     // Load watchlist
-    const wlR = await fetch(`${API}/api/watchlist`);
+    const wlR = await apiFetch('/api/watchlist');
+    if (!wlR.ok) throw new Error(`Watchlist HTTP ${wlR.status}: ${await wlR.text()}`);
     const wlD = await wlR.json();
     state.watchlist = wlD.tickers || [];
 
     // Load all latest
-    const dashR = await fetch(`${API}/api/dashboard`);
+    const dashR = await apiFetch('/api/dashboard');
+    if (!dashR.ok) throw new Error(`Dashboard HTTP ${dashR.status}: ${await dashR.text()}`);
     const dashD = await dashR.json();
     state.allLatest = dashD.data || [];
 
@@ -1000,8 +1155,8 @@ async function loadDashboard() {
     document.getElementById('overviewContent').innerHTML = `
       <div class="empty-state">
         <div class="big">◈</div>
-        <p>No pipeline data yet.<br>Run the pipeline first:<br>
-        <code style="color:var(--green)">python pipeline/run_pipeline.py</code></p>
+        <p>Dashboard data did not load.<br>
+        <code style="color:var(--green)">${escapeHtml(e.message)}</code></p>
       </div>`;
   }
 }
@@ -1071,7 +1226,7 @@ async function selectTicker(ticker) {
   }
 
   try {
-    const r = await fetch(`${API}/api/ticker/${encodeURIComponent(ticker)}`);
+    const r = await apiFetch(`/api/ticker/${encodeURIComponent(ticker)}`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const d = await r.json();
     state.data[ticker] = d;
@@ -1169,7 +1324,7 @@ function renderDetail(d) {
     Array.isArray(analysis.key_risks) &&
     analysis.key_risks.some(r => typeof r === 'string' && r.includes('unavailable'));
   document.getElementById('forecastNote').textContent = usingFallback
-    ? 'Fallback forecast shown because OpenAI was unavailable during this run.'
+    ? 'Fallback forecast shown because AI generation was unavailable during this run.'
     : `Forecast horizon: ${fc.length || 0} trading days`;
   document.getElementById('forecastGrid').innerHTML = fc.length ? fc.map((f, i) => {
     const dirCls = f.direction==='Up'?'dir-up':f.direction==='Down'?'dir-down':'dir-flat';
@@ -1258,7 +1413,7 @@ function renderDetail(d) {
     res.length ? res.map(l=>`<span class="level-pill lp-resist">${l}</span>`).join('') : '<span style="color:var(--hint)">—</span>';
 
   // News
-  const news = d.news || [];
+  const news = (d.news || []).filter(n => (n.headline || n.title) && validUrl(n.url) && timeAgo(n.published_at));
   document.getElementById('newsCount').textContent = `${news.length} articles`;
   document.getElementById('newsFeed').innerHTML = news.slice(0, 8).map(n => {
     const age = n.published_at ? timeAgo(n.published_at) : '';
@@ -1314,7 +1469,7 @@ async function generateEarningsStory() {
   btn.classList.add('running');
   document.getElementById('earningsStory').textContent = 'Generating earnings story...';
   try {
-    const r = await fetch(`${API}/api/ticker/${encodeURIComponent(ticker)}/earnings-story`, { method: 'POST' });
+    const r = await apiFetch(`/api/ticker/${encodeURIComponent(ticker)}/earnings-story`, { method: 'POST' });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const d = await r.json();
     state.generated.earnings[ticker] = d.content;
@@ -1335,7 +1490,7 @@ async function generateNewsDraft() {
   btn.classList.add('running');
   document.getElementById('newsDraftOutput').textContent = 'Generating news draft...';
   try {
-    const r = await fetch(`${API}/api/ticker/${encodeURIComponent(ticker)}/news-draft`, { method: 'POST' });
+    const r = await apiFetch(`/api/ticker/${encodeURIComponent(ticker)}/news-draft`, { method: 'POST' });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const d = await r.json();
     state.generated.newsDraft[ticker] = d.content;
@@ -1497,9 +1652,8 @@ function wlAddTicker() {
 
 async function saveWatchlist() {
   try {
-    await fetch(`${API}/api/watchlist`, {
+    await apiFetch('/api/watchlist', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tickers: state.watchlist }),
     });
     toast('Watchlist saved ✓ — run pipeline to fetch new tickers');
@@ -1524,7 +1678,7 @@ async function triggerRun() {
   btn.textContent = '⟳ RUNNING...';
   btn.classList.add('running');
   try {
-    await fetch(`${API}/api/run`, { method: 'POST' });
+    await apiFetch('/api/run', { method: 'POST' });
     toast('Pipeline started — refresh in ~2 minutes');
   } catch(e) {
     toast('Failed to start pipeline');
@@ -1584,7 +1738,10 @@ function fmtPrice(p, ticker) {
 
 function timeAgo(isoStr) {
   try {
-    const diff = Date.now() - new Date(isoStr).getTime();
+    const date = new Date(isoStr);
+    if (!Number.isFinite(date.getTime()) || date.getFullYear() < 2000) return '';
+    const diff = Date.now() - date.getTime();
+    if (diff < -300000) return '';
     const h = Math.floor(diff / 3600000);
     if (h < 1) return 'just now';
     if (h < 24) return `${h}h ago`;

@@ -93,6 +93,7 @@ Secrets Manager. The generated secret uses this shape:
 {
   "fred_api_key": "",
   "newsapi_key": "",
+  "x_bearer_token": "",
   "discord_webhook_url": "",
   "openai_api_key": ""
 }

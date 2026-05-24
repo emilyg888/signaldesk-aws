@@ -29,7 +29,7 @@ class SignalDeskCoreStack(Stack):
             secret_name=os.getenv("SIGNALDESK_SECRET_NAME", "/signaldesk/dev/secrets"),
             description="SignalDesk external API keys and webhook URLs. Seed values after deploy; do not commit secrets.",
             generate_secret_string=secretsmanager.SecretStringGenerator(
-                secret_string_template=json.dumps({"fred_api_key": "", "newsapi_key": "", "discord_webhook_url": "", "openai_api_key": ""}),
+                secret_string_template=json.dumps({"fred_api_key": "", "newsapi_key": "", "x_bearer_token": "", "discord_webhook_url": "", "openai_api_key": ""}),
                 generate_string_key="placeholder",
             ),
         )

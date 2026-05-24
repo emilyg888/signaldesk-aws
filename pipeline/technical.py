@@ -1,11 +1,10 @@
 """
-Technical indicator computation using pandas-ta.
+Technical indicator computation using pandas.
 Covers RSI, MACD, EMA, Bollinger Bands, ATR, Volume ratio.
 """
 
 import logging
 import pandas as pd
-import pandas_ta as ta
 
 log = logging.getLogger(__name__)
 
@@ -23,11 +22,11 @@ def compute_technicals(price_data: dict) -> dict:
     results = {}
 
     # ── RSI ──────────────────────────────────────────────────────────────────
-    rsi = ta.rsi(df["close"], length=14)
+    rsi = _rsi(df["close"], length=14)
     results["rsi"] = round(float(rsi.iloc[-1]), 2) if rsi is not None and not rsi.empty else None
 
     # ── MACD ─────────────────────────────────────────────────────────────────
-    macd_df = ta.macd(df["close"], fast=12, slow=26, signal=9)
+    macd_df = _macd(df["close"], fast=12, slow=26, signal=9)
     if macd_df is not None and not macd_df.empty:
         results["macd"]        = round(float(macd_df["MACD_12_26_9"].iloc[-1]), 4)
         results["macd_signal"] = round(float(macd_df["MACDs_12_26_9"].iloc[-1]), 4)
@@ -36,8 +35,8 @@ def compute_technicals(price_data: dict) -> dict:
         results["macd"] = results["macd_signal"] = results["macd_hist"] = None
 
     # ── EMA 20 / 50 ──────────────────────────────────────────────────────────
-    ema20 = ta.ema(df["close"], length=20)
-    ema50 = ta.ema(df["close"], length=50) if len(df) >= 50 else None
+    ema20 = _ema(df["close"], length=20)
+    ema50 = _ema(df["close"], length=50) if len(df) >= 50 else None
 
     results["ema20"] = round(float(ema20.iloc[-1]), 4) if ema20 is not None else None
     results["ema50"] = round(float(ema50.iloc[-1]), 4) if ema50 is not None else None
@@ -57,7 +56,7 @@ def compute_technicals(price_data: dict) -> dict:
         results["ema_cross"] = "insufficient_data"
 
     # ── Bollinger Bands ───────────────────────────────────────────────────────
-    bb = ta.bbands(df["close"], length=20, std=2)
+    bb = _bbands(df["close"], length=20, std=2)
     if bb is not None and not bb.empty:
         close  = float(df["close"].iloc[-1])
         bb_upper = float(bb["BBU_20_2.0_2.0"].iloc[-1])
@@ -80,7 +79,7 @@ def compute_technicals(price_data: dict) -> dict:
         results["bb_position"] = None
 
     # ── ATR (volatility) ─────────────────────────────────────────────────────
-    atr = ta.atr(df["high"], df["low"], df["close"], length=14)
+    atr = _atr(df["high"], df["low"], df["close"], length=14)
     results["atr"] = round(float(atr.iloc[-1]), 4) if atr is not None else None
     results["atr_pct"] = round(results["atr"] / float(df["close"].iloc[-1]) * 100, 2) if results["atr"] else None
 
@@ -93,7 +92,7 @@ def compute_technicals(price_data: dict) -> dict:
         results["volume_ratio"] = 1.0
 
     # ── Stochastic ───────────────────────────────────────────────────────────
-    stoch = ta.stoch(df["high"], df["low"], df["close"])
+    stoch = _stoch(df["high"], df["low"], df["close"])
     if stoch is not None and not stoch.empty:
         results["stoch_k"] = round(float(stoch["STOCHk_14_3_3"].iloc[-1]), 2)
         results["stoch_d"] = round(float(stoch["STOCHd_14_3_3"].iloc[-1]), 2)
@@ -104,6 +103,65 @@ def compute_technicals(price_data: dict) -> dict:
     results["composite_score"] = _tech_score(results)
 
     return results
+
+
+def _ema(series: pd.Series, length: int) -> pd.Series:
+    return series.ewm(span=length, adjust=False, min_periods=length).mean()
+
+
+def _rsi(close: pd.Series, length: int = 14) -> pd.Series:
+    delta = close.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1 / length, adjust=False, min_periods=length).mean()
+    avg_loss = loss.ewm(alpha=1 / length, adjust=False, min_periods=length).mean()
+    rs = avg_gain / avg_loss.replace(0, pd.NA)
+    return 100 - (100 / (1 + rs))
+
+
+def _macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.DataFrame:
+    macd = _ema(close, fast) - _ema(close, slow)
+    signal_line = macd.ewm(span=signal, adjust=False, min_periods=signal).mean()
+    hist = macd - signal_line
+    return pd.DataFrame({
+        "MACD_12_26_9": macd,
+        "MACDs_12_26_9": signal_line,
+        "MACDh_12_26_9": hist,
+    })
+
+
+def _bbands(close: pd.Series, length: int = 20, std: float = 2) -> pd.DataFrame:
+    mid = close.rolling(window=length, min_periods=length).mean()
+    deviation = close.rolling(window=length, min_periods=length).std()
+    upper = mid + deviation * std
+    lower = mid - deviation * std
+    return pd.DataFrame({
+        "BBL_20_2.0_2.0": lower,
+        "BBM_20_2.0_2.0": mid,
+        "BBU_20_2.0_2.0": upper,
+    })
+
+
+def _atr(high: pd.Series, low: pd.Series, close: pd.Series, length: int = 14) -> pd.Series:
+    prev_close = close.shift(1)
+    true_range = pd.concat([
+        high - low,
+        (high - prev_close).abs(),
+        (low - prev_close).abs(),
+    ], axis=1).max(axis=1)
+    return true_range.ewm(alpha=1 / length, adjust=False, min_periods=length).mean()
+
+
+def _stoch(high: pd.Series, low: pd.Series, close: pd.Series, k_length: int = 14, k_smooth: int = 3, d_smooth: int = 3) -> pd.DataFrame:
+    lowest_low = low.rolling(window=k_length, min_periods=k_length).min()
+    highest_high = high.rolling(window=k_length, min_periods=k_length).max()
+    raw_k = 100 * (close - lowest_low) / (highest_high - lowest_low).replace(0, pd.NA)
+    stoch_k = raw_k.rolling(window=k_smooth, min_periods=k_smooth).mean()
+    stoch_d = stoch_k.rolling(window=d_smooth, min_periods=d_smooth).mean()
+    return pd.DataFrame({
+        "STOCHk_14_3_3": stoch_k,
+        "STOCHd_14_3_3": stoch_d,
+    })
 
 
 def _tech_score(t: dict) -> int:

@@ -6,6 +6,27 @@ from pathlib import Path
 from aws_cdk import CfnOutput, Duration, RemovalPolicy, Stack, aws_dynamodb as dynamodb, aws_events as events, aws_events_targets as targets, aws_iam as iam, aws_lambda as lambda_, aws_logs as logs, aws_sqs as sqs, aws_secretsmanager as secretsmanager, aws_ssm as ssm
 from constructs import Construct
 
+_ASSET_EXCLUDE = [
+    ".git",
+    ".git/*",
+    ".venv",
+    ".venv/*",
+    "cdk.out",
+    "cdk.out/*",
+    "infrastructure/cdk.out",
+    "infrastructure/cdk.out/*",
+    "logs",
+    "logs/*",
+    "data/db",
+    "data/db/*",
+    "data/cache",
+    "data/cache/*",
+    ".env",
+    ".env.*",
+    "**/__pycache__",
+    "**/*.pyc",
+]
+
 
 class SignalDeskPipelineStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, *, table: dynamodb.ITable, secret: secretsmanager.ISecret, settings_param: ssm.IStringParameter, denylist_param: ssm.IStringParameter, allowed_topics_param: ssm.IStringParameter, **kwargs) -> None:
@@ -15,7 +36,8 @@ class SignalDeskPipelineStack(Stack):
         self.pipeline_function = lambda_.DockerImageFunction(
             self,
             "PipelineFunction",
-            code=lambda_.DockerImageCode.from_image_asset(str(project_root), file="Dockerfile.pipeline"),
+            code=lambda_.DockerImageCode.from_image_asset(str(project_root), file="Dockerfile.pipeline", exclude=_ASSET_EXCLUDE),
+            architecture=lambda_.Architecture.ARM_64,
             timeout=Duration.minutes(15),
             memory_size=2048,
             dead_letter_queue=dlq,

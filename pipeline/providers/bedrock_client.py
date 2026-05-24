@@ -84,8 +84,6 @@ class BedrockClient(AIClient):
                 )
                 repaired = self._converse(repair_prompt)
                 return validate_model_output(schema, parse_json_object(repaired))
-        except SafetyError:
-            raise
         except Exception as exc:
             log.warning("bedrock_generation_fallback endpoint=%s error=%s", endpoint, exc)
             return fallback

@@ -4,7 +4,8 @@ Falls back to yfinance news if NewsAPI key not set.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
+from typing import Any
 
 import yfinance as yf
 
@@ -81,15 +82,66 @@ def _fetch_yf_news(ticker: str) -> list[dict]:
         raw = t.news or []
         items = []
         for n in raw[:SETTINGS["news_max_items"]]:
-            items.append({
-                "headline":    n.get("title", ""),
-                "source":      n.get("publisher", ""),
-                "url":         n.get("link", ""),
-                "published_at": datetime.fromtimestamp(n.get("providerPublishTime", 0)).isoformat(),
-                "summary":     "",
-            })
+            item = _normalize_yf_item(n)
+            if item:
+                items.append(item)
         log.debug(f"  yfinance news returned {len(items)} items for {ticker}")
         return items
     except Exception as e:
         log.warning(f"  yfinance news fetch failed for {ticker}: {e}")
         return []
+
+
+def _normalize_yf_item(item: dict[str, Any]) -> dict[str, str] | None:
+    content = item.get("content") if isinstance(item.get("content"), dict) else item
+    headline = str(content.get("title") or item.get("title") or "").strip()
+    if not headline:
+        return None
+
+    provider = content.get("provider") if isinstance(content.get("provider"), dict) else {}
+    source = str(provider.get("displayName") or item.get("publisher") or "").strip()
+    url = _first_url(
+        content.get("canonicalUrl"),
+        content.get("clickThroughUrl"),
+        item.get("canonicalUrl"),
+        item.get("clickThroughUrl"),
+        item.get("link"),
+    )
+    published_at = _published_at(
+        content.get("pubDate")
+        or content.get("displayTime")
+        or item.get("pubDate")
+        or item.get("displayTime")
+        or item.get("providerPublishTime")
+    )
+    if not url or not published_at:
+        return None
+    return {
+        "headline": headline,
+        "source": source,
+        "url": url,
+        "published_at": published_at,
+        "summary": str(content.get("summary") or content.get("description") or "").strip(),
+    }
+
+
+def _first_url(*values: Any) -> str:
+    for value in values:
+        url = value.get("url") if isinstance(value, dict) else value
+        url = str(url or "").strip()
+        if url.startswith(("http://", "https://")):
+            return url
+    return ""
+
+
+def _published_at(value: Any) -> str:
+    if isinstance(value, (int, float)) and value > 0:
+        return datetime.fromtimestamp(value, timezone.utc).isoformat()
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+            if parsed.year > 2000:
+                return parsed.isoformat()
+        except ValueError:
+            return ""
+    return ""

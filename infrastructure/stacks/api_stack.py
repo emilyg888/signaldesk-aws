@@ -6,7 +6,7 @@ from pathlib import Path
 from aws_cdk import CfnOutput, Duration, RemovalPolicy, Stack, aws_apigateway as apigw, aws_cognito as cognito, aws_dynamodb as dynamodb, aws_iam as iam, aws_lambda as lambda_, aws_logs as logs, aws_secretsmanager as secretsmanager, aws_ssm as ssm
 from constructs import Construct
 
-_ASSET_EXCLUDE = [".git", ".git/*", ".venv", ".venv/*", "cdk.out", "cdk.out/*", "logs", "logs/*", "data/db", "data/db/*", "data/cache", "data/cache/*", "pipeline/config.py", ".env", ".env.*", "**/__pycache__", "**/*.pyc"]
+_ASSET_EXCLUDE = [".git", ".git/*", ".venv", ".venv/*", "cdk.out", "cdk.out/*", "infrastructure/cdk.out", "infrastructure/cdk.out/*", "logs", "logs/*", "data/db", "data/db/*", "data/cache", "data/cache/*", ".env", ".env.*", "**/__pycache__", "**/*.pyc"]
 
 
 class SignalDeskApiStack(Stack):

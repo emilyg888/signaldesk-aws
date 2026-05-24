@@ -6,7 +6,6 @@ import os
 from typing import Any
 
 from pipeline.runtime import get_storage_provider
-from pipeline.safety.validator import SafetyError
 
 
 def clean_nan(obj: Any) -> Any:
@@ -42,10 +41,10 @@ def handle_errors(fn):
     def wrapper(event, context):
         try:
             return fn(event or {}, context)
-        except SafetyError as exc:
-            return error_response(400, exc.code, exc.message)
         except ValueError as exc:
-            return error_response(400, "bad_request", str(exc))
+            code = getattr(exc, "code", "bad_request")
+            message = getattr(exc, "message", str(exc))
+            return error_response(400, code, message)
         except Exception as exc:
             return error_response(500, "internal_error", str(exc) if os.getenv("SIGNALDESK_DEBUG_ERRORS") == "true" else "Internal server error.")
     return wrapper

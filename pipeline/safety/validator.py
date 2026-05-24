@@ -33,7 +33,7 @@ def _flatten_text(value: Any) -> str:
     if isinstance(value, str):
         return value
     if isinstance(value, dict):
-        return " ".join(_flatten_text(v) for v in value.values())
+        return " ".join(f"{_flatten_text(k)} {_flatten_text(v)}" for k, v in value.items())
     if isinstance(value, (list, tuple, set)):
         return " ".join(_flatten_text(v) for v in value)
     return str(value)

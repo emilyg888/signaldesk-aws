@@ -4,7 +4,6 @@
 # Data
 yfinance>=0.2.36
 pandas>=2.0.0
-pandas-ta>=0.3.14b
 fredapi>=0.5.1
 
 # News

@@ -80,6 +80,7 @@ class AWSConfigProvider(ConfigProvider):
         return RuntimeSecrets(
             fred_api_key=payload.get("fred_api_key", ""),
             newsapi_key=payload.get("newsapi_key", ""),
+            x_bearer_token=payload.get("x_bearer_token", ""),
             discord_webhook_url=payload.get("discord_webhook_url", ""),
             openai_api_key=payload.get("openai_api_key", ""),
         )

@@ -6,8 +6,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from pipeline.safety.schemas import StoredRunPayload
-
 
 def _clean_for_dynamodb(value: Any) -> Any:
     if isinstance(value, float):
@@ -42,6 +40,8 @@ class DynamoDBStorageProvider:
         return None
 
     def save_run(self, result: dict[str, Any]) -> None:
+        from pipeline.safety.schemas import StoredRunPayload
+
         validated = StoredRunPayload.model_validate(result).model_dump()
         ticker = validated["ticker"].upper()
         run_date = validated["run_date"]
