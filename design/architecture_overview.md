@@ -4,7 +4,7 @@ SignalDesk has been ported from a local macOS/SQLite/FastAPI prototype to an AWS
 serverless application.
 
 The canonical architecture document is
-[design/ARCHITECTURE.md](/Users/emilygao/LocalDocuments/Projects/signaldesk-aws/design/ARCHITECTURE.md).
+[design/architecture.md](/Users/emilygao/LocalDocuments/Projects/signaldesk-aws/design/architecture.md).
 
 ## Current AWS Shape
 

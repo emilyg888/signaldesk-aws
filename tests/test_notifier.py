@@ -55,7 +55,7 @@ DISCORD_RESULTS = [
 ]
 
 VALID_KEYS = {
-    "discord_webhook": "https://discord.com/api/webhooks/test/fake",
+    "discord_webhook": "https://example.invalid/webhook",
 }
 
 

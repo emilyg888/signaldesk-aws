@@ -31,8 +31,6 @@ def run(tickers: list[str] | None = None, *, run_id: str | None = None, source: 
     settings = config.pipeline_settings()
     storage.init()
     raw_watchlist = tickers if tickers is not None else storage.load_watchlist()
-    if not raw_watchlist:
-        raw_watchlist = config.default_watchlist()
     watchlist = [t.upper().strip() for t in raw_watchlist if t.strip()]
     storage.create_run_status(run_id, "RUNNING", source, watchlist)
     log.info("pipeline_start run_id=%s source=%s tickers=%s", run_id, source, watchlist)

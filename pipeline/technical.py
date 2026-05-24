@@ -9,6 +9,15 @@ import pandas as pd
 log = logging.getLogger(__name__)
 
 
+def _latest_float(series: pd.Series | None, digits: int) -> float | None:
+    if series is None or series.empty:
+        return None
+    value = series.iloc[-1]
+    if pd.isna(value):
+        return None
+    return round(float(value), digits)
+
+
 def compute_technicals(price_data: dict) -> dict:
     history = price_data["history"]
     if len(history) < 20:
@@ -23,14 +32,14 @@ def compute_technicals(price_data: dict) -> dict:
 
     # ── RSI ──────────────────────────────────────────────────────────────────
     rsi = _rsi(df["close"], length=14)
-    results["rsi"] = round(float(rsi.iloc[-1]), 2) if rsi is not None and not rsi.empty else None
+    results["rsi"] = _latest_float(rsi, 2)
 
     # ── MACD ─────────────────────────────────────────────────────────────────
     macd_df = _macd(df["close"], fast=12, slow=26, signal=9)
     if macd_df is not None and not macd_df.empty:
-        results["macd"]        = round(float(macd_df["MACD_12_26_9"].iloc[-1]), 4)
-        results["macd_signal"] = round(float(macd_df["MACDs_12_26_9"].iloc[-1]), 4)
-        results["macd_hist"]   = round(float(macd_df["MACDh_12_26_9"].iloc[-1]), 4)
+        results["macd"] = _latest_float(macd_df["MACD_12_26_9"], 4)
+        results["macd_signal"] = _latest_float(macd_df["MACDs_12_26_9"], 4)
+        results["macd_hist"] = _latest_float(macd_df["MACDh_12_26_9"], 4)
     else:
         results["macd"] = results["macd_signal"] = results["macd_hist"] = None
 
@@ -38,13 +47,15 @@ def compute_technicals(price_data: dict) -> dict:
     ema20 = _ema(df["close"], length=20)
     ema50 = _ema(df["close"], length=50) if len(df) >= 50 else None
 
-    results["ema20"] = round(float(ema20.iloc[-1]), 4) if ema20 is not None else None
-    results["ema50"] = round(float(ema50.iloc[-1]), 4) if ema50 is not None else None
+    results["ema20"] = _latest_float(ema20, 4)
+    results["ema50"] = _latest_float(ema50, 4)
 
     if results["ema20"] and results["ema50"]:
-        prev_ema20 = float(ema20.iloc[-2])
-        prev_ema50 = float(ema50.iloc[-2])
-        if prev_ema20 <= prev_ema50 and results["ema20"] > results["ema50"]:
+        prev_ema20 = None if pd.isna(ema20.iloc[-2]) else float(ema20.iloc[-2])
+        prev_ema50 = None if pd.isna(ema50.iloc[-2]) else float(ema50.iloc[-2])
+        if prev_ema20 is None or prev_ema50 is None:
+            results["ema_cross"] = "insufficient_data"
+        elif prev_ema20 <= prev_ema50 and results["ema20"] > results["ema50"]:
             results["ema_cross"] = "golden_cross"
         elif prev_ema20 >= prev_ema50 and results["ema20"] < results["ema50"]:
             results["ema_cross"] = "death_cross"
@@ -58,20 +69,18 @@ def compute_technicals(price_data: dict) -> dict:
     # ── Bollinger Bands ───────────────────────────────────────────────────────
     bb = _bbands(df["close"], length=20, std=2)
     if bb is not None and not bb.empty:
-        close  = float(df["close"].iloc[-1])
-        bb_upper = float(bb["BBU_20_2.0_2.0"].iloc[-1])
-        bb_mid   = float(bb["BBM_20_2.0_2.0"].iloc[-1])
-        bb_lower = float(bb["BBL_20_2.0_2.0"].iloc[-1])
-        bb_width = (bb_upper - bb_lower) / bb_mid
+        close = float(df["close"].iloc[-1])
+        results["bb_upper"] = _latest_float(bb["BBU_20_2.0_2.0"], 4)
+        results["bb_mid"] = _latest_float(bb["BBM_20_2.0_2.0"], 4)
+        results["bb_lower"] = _latest_float(bb["BBL_20_2.0_2.0"], 4)
+        if results["bb_upper"] is not None and results["bb_mid"] not in (None, 0) and results["bb_lower"] is not None:
+            results["bb_width"] = round((results["bb_upper"] - results["bb_lower"]) / results["bb_mid"], 4)
+        else:
+            results["bb_width"] = None
 
-        results["bb_upper"] = round(bb_upper, 4)
-        results["bb_mid"]   = round(bb_mid, 4)
-        results["bb_lower"] = round(bb_lower, 4)
-        results["bb_width"] = round(bb_width, 4)
-
-        if close >= bb_upper * 0.99:
+        if results["bb_upper"] is not None and close >= results["bb_upper"] * 0.99:
             results["bb_position"] = "upper"
-        elif close <= bb_lower * 1.01:
+        elif results["bb_lower"] is not None and close <= results["bb_lower"] * 1.01:
             results["bb_position"] = "lower"
         else:
             results["bb_position"] = "mid"
@@ -80,7 +89,7 @@ def compute_technicals(price_data: dict) -> dict:
 
     # ── ATR (volatility) ─────────────────────────────────────────────────────
     atr = _atr(df["high"], df["low"], df["close"], length=14)
-    results["atr"] = round(float(atr.iloc[-1]), 4) if atr is not None else None
+    results["atr"] = _latest_float(atr, 4)
     results["atr_pct"] = round(results["atr"] / float(df["close"].iloc[-1]) * 100, 2) if results["atr"] else None
 
     # ── Volume ratio ─────────────────────────────────────────────────────────
@@ -94,8 +103,8 @@ def compute_technicals(price_data: dict) -> dict:
     # ── Stochastic ───────────────────────────────────────────────────────────
     stoch = _stoch(df["high"], df["low"], df["close"])
     if stoch is not None and not stoch.empty:
-        results["stoch_k"] = round(float(stoch["STOCHk_14_3_3"].iloc[-1]), 2)
-        results["stoch_d"] = round(float(stoch["STOCHd_14_3_3"].iloc[-1]), 2)
+        results["stoch_k"] = _latest_float(stoch["STOCHk_14_3_3"], 2)
+        results["stoch_d"] = _latest_float(stoch["STOCHd_14_3_3"], 2)
     else:
         results["stoch_k"] = results["stoch_d"] = None
 
@@ -116,7 +125,10 @@ def _rsi(close: pd.Series, length: int = 14) -> pd.Series:
     avg_gain = gain.ewm(alpha=1 / length, adjust=False, min_periods=length).mean()
     avg_loss = loss.ewm(alpha=1 / length, adjust=False, min_periods=length).mean()
     rs = avg_gain / avg_loss.replace(0, pd.NA)
-    return 100 - (100 / (1 + rs))
+    rsi = 100 - (100 / (1 + rs))
+    rsi = rsi.mask((avg_loss == 0) & (avg_gain > 0), 100)
+    rsi = rsi.mask((avg_loss == 0) & (avg_gain == 0), 50)
+    return rsi
 
 
 def _macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.DataFrame:
