@@ -17,7 +17,7 @@ class SignalDeskDashboardStack(Stack):
             "DashboardDistribution",
             default_behavior=cloudfront.BehaviorOptions(origin=origins.S3BucketOrigin.with_origin_access_control(bucket), viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS),
             additional_behaviors={
-                "/api/*": cloudfront.BehaviorOptions(
+                "api/*": cloudfront.BehaviorOptions(
                     origin=origins.HttpOrigin(api_domain, origin_path=f"/{api.deployment_stage.stage_name}"),
                     allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
                     cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,

@@ -996,16 +996,21 @@
     <input id="authEmail" type="email" autocomplete="username">
     <label for="authPassword">Password</label>
     <input id="authPassword" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')signIn()">
+    <div id="newPasswordFields" style="display:none">
+      <label for="authNewPassword">New password</label>
+      <input id="authNewPassword" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')completeNewPassword()">
+    </div>
     <div class="auth-error" id="authError"></div>
-    <button class="run-btn" onclick="signIn()" style="width:100%;margin-top:10px;border-color:var(--green);color:var(--green)">SIGN IN</button>
+    <button class="run-btn" id="authButton" onclick="signIn()" style="width:100%;margin-top:10px;border-color:var(--green);color:var(--green)">SIGN IN</button>
   </div>
 </div>
 
 <script>
 const API = '';  // same origin — FastAPI serves this file
 const COGNITO_REGION = 'ap-southeast-2';
-const COGNITO_CLIENT_ID = '6oncta8rljc9hb4h6brn09pv5j';
+const COGNITO_CLIENT_ID = '1m3237hhoc4oeaq82m8j6adcla';
 const TOKEN_KEY = 'signaldesk_id_token';
+let pendingNewPasswordChallenge = null;
 let state = {
   activeTicker: null,
   watchlist: [],
@@ -1068,7 +1073,16 @@ async function signIn() {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.message || d.__type || `HTTP ${r.status}`);
-    if (d.ChallengeName) throw new Error(`Cognito challenge ${d.ChallengeName} is required. Set a permanent password in Cognito, then sign in again.`);
+    if (d.ChallengeName === 'NEW_PASSWORD_REQUIRED') {
+      pendingNewPasswordChallenge = { username, session: d.Session };
+      document.getElementById('newPasswordFields').style.display = 'block';
+      document.getElementById('authButton').textContent = 'SET PASSWORD';
+      document.getElementById('authButton').onclick = completeNewPassword;
+      authError.textContent = 'Set a permanent password to finish first sign-in.';
+      document.getElementById('authNewPassword').focus();
+      return;
+    }
+    if (d.ChallengeName) throw new Error(`Unsupported Cognito challenge ${d.ChallengeName}.`);
     const token = d.AuthenticationResult && d.AuthenticationResult.IdToken;
     if (!token) throw new Error('Cognito did not return an ID token.');
     localStorage.setItem(TOKEN_KEY, token);
@@ -1079,8 +1093,50 @@ async function signIn() {
   }
 }
 
+async function completeNewPassword() {
+  const authError = document.getElementById('authError');
+  authError.textContent = '';
+  if (!pendingNewPasswordChallenge) {
+    authError.textContent = 'Start sign-in again before setting a new password.';
+    return;
+  }
+  const newPassword = document.getElementById('authNewPassword').value;
+  try {
+    const r = await fetch(`https://cognito-idp.${COGNITO_REGION}.amazonaws.com/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-amz-json-1.1',
+        'X-Amz-Target': 'AWSCognitoIdentityProviderService.RespondToAuthChallenge',
+      },
+      body: JSON.stringify({
+        ChallengeName: 'NEW_PASSWORD_REQUIRED',
+        ClientId: COGNITO_CLIENT_ID,
+        Session: pendingNewPasswordChallenge.session,
+        ChallengeResponses: {
+          USERNAME: pendingNewPasswordChallenge.username,
+          NEW_PASSWORD: newPassword,
+        },
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || d.__type || `HTTP ${r.status}`);
+    const token = d.AuthenticationResult && d.AuthenticationResult.IdToken;
+    if (!token) throw new Error('Cognito did not return an ID token.');
+    pendingNewPasswordChallenge = null;
+    localStorage.setItem(TOKEN_KEY, token);
+    hideAuth();
+    await boot();
+  } catch (e) {
+    authError.textContent = e.message;
+  }
+}
+
 function signOut() {
   localStorage.removeItem(TOKEN_KEY);
+  pendingNewPasswordChallenge = null;
+  document.getElementById('newPasswordFields').style.display = 'none';
+  document.getElementById('authButton').textContent = 'SIGN IN';
+  document.getElementById('authButton').onclick = signIn;
   showAuth();
 }
 
